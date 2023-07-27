@@ -22,11 +22,3 @@ resource "terraform_data" "docker_push" {
 
   depends_on = [docker_image.proxy]
 }
-
-#resource "docker_registry_image" "proxy" {
-#  name = docker_image.proxy.name
-#  keep_remotely = true
-#  triggers = {
-#    code_hash = filemd5("${path.module}/telemetry/main.go")
-#  }
-#}

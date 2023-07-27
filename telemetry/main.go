@@ -13,7 +13,8 @@ func main() {
 		var tags = make(map[string]string, 0)
 		err := c.ReadBody(&tags)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			c.StatusCode(iris.StatusBadRequest)
+			c.WriteString("incorrect tags")
 			return
 		}
 		for n, v := range tags {

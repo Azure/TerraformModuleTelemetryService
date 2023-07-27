@@ -1,14 +1,3 @@
-#module "container-apps" {
-#  source  = "Azure/container-apps/azure"
-#  version = "0.1.0"
-#  # insert the 5 required variables here
-#  container_app_environment_name = "telemetry_proxy"
-#  container_apps                 = {}
-#  location                       = azurerm_resource_group.this.location
-#  log_analytics_workspace_name   = azurerm_log_analytics_workspace.this.name
-#  resource_group_name            = azurerm_resource_group.this.name
-#}
-
 locals {
   image_name = "telemetry_proxy"
 }
@@ -28,6 +17,7 @@ module "telemetry_proxy" {
   source                         = "Azure/container-apps/azure"
   version                        = "0.1.0"
   container_app_environment_name = "telemetry-proxy"
+  container_app_environment_infrastructure_subnet_id = azurerm_subnet.container_apps.id
   container_apps                 = {
     telemetry_proxy = {
       name          = "telemetry-proxy"
@@ -50,8 +40,23 @@ module "telemetry_proxy" {
             percentage      = 100
           }
         }
+        registry = [
+          {
+            server               = azurerm_container_registry.this.login_server
+            username             = azurerm_container_registry_token.pull.name
+            password_secret_name = "secname"
+          }
+        ]
       }
     }
+  }
+  container_app_secrets = {
+    proxy = [
+      {
+        name = "secname"
+        value = azurerm_container_registry_token_password.pull_password.password1[0].value
+      }
+    ]
   }
   location                     = azurerm_resource_group.this.location
   log_analytics_workspace_name = azurerm_log_analytics_workspace.this.name
