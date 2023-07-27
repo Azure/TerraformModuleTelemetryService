@@ -7,12 +7,6 @@ resource "azurerm_resource_group" "this" {
   name     = "azure-verified-module-telemetry"
 }
 
-resource "azurerm_log_analytics_workspace" "this" {
-  location            = azurerm_resource_group.this.location
-  name                = "telemetry-proxy-log-analytics-workspace"
-  resource_group_name = azurerm_resource_group.this.name
-}
-
 module "telemetry_proxy" {
   source                         = "Azure/container-apps/azure"
   version                        = "0.1.0"
@@ -59,7 +53,7 @@ module "telemetry_proxy" {
     ]
   }
   location                     = azurerm_resource_group.this.location
-  log_analytics_workspace_name = azurerm_log_analytics_workspace.this.name
+  log_analytics_workspace_name = "telemetry-proxy-log-analytics-workspace"
   resource_group_name          = azurerm_resource_group.this.name
   depends_on                   = [terraform_data.docker_push]
 }

@@ -63,7 +63,7 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 resource "azurerm_subnet" "acr" {
-  address_prefixes     = [cidrsubnet("192.168.0.0/24", 4, 0)]
+  address_prefixes     = [cidrsubnet("192.168.0.0/16", 8, 0)]
   name                 = "acr"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.vnet.name
