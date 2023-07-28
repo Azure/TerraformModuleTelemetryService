@@ -45,7 +45,7 @@ module "telemetry_proxy" {
     }
   }
   container_app_secrets = {
-    proxy = [
+    telemetry_proxy = [
       {
         name = "secname"
         value = azurerm_container_registry_token_password.pull_password.password1[0].value
