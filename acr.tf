@@ -16,6 +16,10 @@ resource "azurerm_container_registry" "this" {
       action = "Allow"
       ip_range = "${module.public_ip.public_ip}/32"
     }
+    virtual_network {
+      action    = "Allow"
+      subnet_id = azurerm_subnet.acr.id
+    }
   }
 }
 
@@ -77,6 +81,9 @@ resource "azurerm_subnet" "container_apps" {
   name                 = "containerapps"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.vnet.name
+  private_endpoint_network_policies_enabled     = false
+  private_link_service_network_policies_enabled = false
+  service_endpoints                             = ["Microsoft.ContainerRegistry"]
 }
 
 resource "azurerm_private_endpoint" "pep" {
