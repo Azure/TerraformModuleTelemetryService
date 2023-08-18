@@ -7,6 +7,18 @@ resource "azurerm_resource_group" "this" {
   name     = "avm-telemetry"
 }
 
+locals {
+  port = 8080
+}
+
+resource "azurerm_application_insights" "this" {
+  name                = "avm-telemetry"
+  location            = azurerm_resource_group.this.location
+  resource_group_name = azurerm_resource_group.this.name
+  application_type    = "other"
+}
+
+
 module "telemetry_proxy" {
   source                         = "Azure/container-apps/azure"
   version                        = "0.1.1"
@@ -30,14 +42,23 @@ module "telemetry_proxy" {
             memory = "0.5Gi"
             cpu    = 0.25
             image  = "${docker_image.proxy.name}:${var.image_tag}"
-#            image = "nginx"
+            env = [
+              {
+                name = "PORT"
+                value = local.port
+              },
+              {
+                name = "INSTRUMENTATION_KEY"
+                secret_name = "ikey"
+              }
+            ]
           }
         ]
       }
       ingress = {
         allow_insecure_connection = false
         external_enabled          = true
-        target_port               = 8080
+        target_port               = local.port
         traffic_weight            = {
           latest_revision = true
           percentage      = 100
@@ -50,6 +71,10 @@ module "telemetry_proxy" {
       {
         name = "secname"
         value = azurerm_container_registry_token_password.pull_password.password1[0].value
+      },
+      {
+        name = "ikey"
+        value = azurerm_application_insights.this.instrumentation_key
       }
     ]
   }
