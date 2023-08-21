@@ -2,18 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/context"
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 
 func main() {
 	port := 8080
 	portEnv := os.Getenv("PORT")
-	if p, err := strconv.Atoi(portEnv); err != nil {
+	if p, err := strconv.Atoi(portEnv); portEnv != "" && err != nil {
 		port = p
 	}
 	iKey := os.Getenv("INSTRUMENTATION_KEY")
@@ -39,16 +40,22 @@ func main() {
 			c.WriteString("incorrect tags")
 			return
 		}
-		var event string
+		var event, resourceId string
 		var ok bool
 		if event, ok = tags["event"]; !ok {
 			c.StatusCode(iris.StatusBadRequest)
 			c.WriteString("event required")
 			return
 		}
+		if resourceId, ok = tags["resource_id"]; !ok {
+			c.StatusCode(iris.StatusBadRequest)
+			c.WriteString("resource_id required")
+		}
 		telemetry := appinsights.NewEventTelemetry(event)
 		telemetry.Properties = tags
+		telemetry.Tags.User().SetAccountId(resourceId)
 		client.Track(telemetry)
+		c.StatusCode(iris.StatusOK)
 	})
 	app.Listen(fmt.Sprintf(":%d", port))
 }
