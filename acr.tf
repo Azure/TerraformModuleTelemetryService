@@ -4,16 +4,17 @@ module "public_ip" {
 }
 
 resource "azurerm_container_registry" "this" {
-  location            = azurerm_resource_group.this.location
-  name                = "avmtelemetry"
-  resource_group_name = azurerm_resource_group.this.name
-  sku                 = "Premium"
+  location                      = azurerm_resource_group.this.location
+  name                          = "avmtelemetry"
+  resource_group_name           = azurerm_resource_group.this.name
+  sku                           = "Premium"
   public_network_access_enabled = true
-  network_rule_set  {
+
+  network_rule_set {
     default_action = "Deny"
 
     ip_rule {
-      action = "Allow"
+      action   = "Allow"
       ip_range = "${module.public_ip.public_ip}/32"
     }
     virtual_network {
@@ -44,6 +45,7 @@ resource "azurerm_container_registry_token" pull {
 
 resource "azurerm_container_registry_token_password" "pull_password" {
   container_registry_token_id = azurerm_container_registry_token.pull.id
+
   password1 {}
 }
 
@@ -56,6 +58,7 @@ resource "azurerm_container_registry_token" "push" {
 
 resource "azurerm_container_registry_token_password" "push_password" {
   container_registry_token_id = azurerm_container_registry_token.push.id
+
   password1 {}
 }
 
@@ -67,20 +70,20 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 resource "azurerm_subnet" "acr" {
-  address_prefixes     = [cidrsubnet("192.168.0.0/16", 7, 0)]
-  name                 = "acr"
-  resource_group_name  = azurerm_resource_group.this.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  private_endpoint_network_policies_enabled = false
+  address_prefixes                              = [cidrsubnet("192.168.0.0/16", 7, 0)]
+  name                                          = "acr"
+  resource_group_name                           = azurerm_resource_group.this.name
+  virtual_network_name                          = azurerm_virtual_network.vnet.name
+  private_endpoint_network_policies_enabled     = false
   private_link_service_network_policies_enabled = false
-  service_endpoints = ["Microsoft.ContainerRegistry"]
+  service_endpoints                             = ["Microsoft.ContainerRegistry"]
 }
 
 resource "azurerm_subnet" "container_apps" {
-  address_prefixes     = [cidrsubnet("192.168.0.0/16", 7, 1)]
-  name                 = "containerapps"
-  resource_group_name  = azurerm_resource_group.this.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes                              = [cidrsubnet("192.168.0.0/16", 7, 1)]
+  name                                          = "containerapps"
+  resource_group_name                           = azurerm_resource_group.this.name
+  virtual_network_name                          = azurerm_virtual_network.vnet.name
   private_endpoint_network_policies_enabled     = false
   private_link_service_network_policies_enabled = false
   service_endpoints                             = ["Microsoft.ContainerRegistry"]

@@ -2,7 +2,7 @@ resource "docker_image" "proxy" {
   name = "${azurerm_container_registry.this.login_server}/telemetry_proxy"
   build {
     context = "."
-    tag = ["${azurerm_container_registry.this.login_server}/telemetry_proxy:${var.image_tag}"]
+    tag     = ["${azurerm_container_registry.this.login_server}/telemetry_proxy:${var.image_tag}"]
   }
   triggers = {
     code_hash = filemd5("${path.module}/telemetry/main.go")
@@ -10,11 +10,11 @@ resource "docker_image" "proxy" {
 }
 
 resource "terraform_data" "docker_push" {
-  triggers_replace  = {
-    code_hash = filemd5("${path.module}/telemetry/main.go")
+  triggers_replace = {
+    code_hash  = filemd5("${path.module}/telemetry/main.go")
     image_name = docker_image.proxy.name
-    image_tag = var.image_tag
-    registry = azurerm_container_registry.this.login_server
+    image_tag  = var.image_tag
+    registry   = azurerm_container_registry.this.login_server
   }
   provisioner "local-exec" {
     command = "docker login -u ${azurerm_container_registry_token.push.name} -p ${azurerm_container_registry_token_password.push_password.password1[0].value} https://${azurerm_container_registry.this.login_server}"

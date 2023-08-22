@@ -12,19 +12,19 @@ locals {
 }
 
 resource "azurerm_application_insights" "this" {
-  name                = "avm-telemetry"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
   application_type    = "other"
+  location            = azurerm_resource_group.this.location
+  name                = "avm-telemetry"
+  resource_group_name = azurerm_resource_group.this.name
 }
 
 
 module "telemetry_proxy" {
-  source                         = "Azure/container-apps/azure"
-  version                        = "0.1.1"
-  container_app_environment_name = "telemetry-proxy"
+  source                                             = "Azure/container-apps/azure"
+  version                                            = "0.2.0"
+  container_app_environment_name                     = "telemetry-proxy"
   container_app_environment_infrastructure_subnet_id = azurerm_subnet.container_apps.id
-  container_apps                 = {
+  container_apps = {
     telemetry_proxy = {
       name          = "telemetry-proxy"
       revision_mode = "Single"
@@ -42,16 +42,19 @@ module "telemetry_proxy" {
             memory = "0.5Gi"
             cpu    = 0.25
             image  = "${docker_image.proxy.name}:${var.image_tag}"
-            env = [
+            env = toset(concat([
               {
-                name = "PORT"
-                value = local.port
+                name        = "INSTRUMENTATION_KEY"
+                secret_name = "ikey"
               },
               {
-                name = "INSTRUMENTATION_KEY"
-                secret_name = "ikey"
-              }
-            ]
+                name  = "PORT"
+                value = local.port
+              },
+              ], var.telemetry_proxy_diag ? [{
+                name  = "DIAG"
+                value = "1"
+            }] : []))
           }
         ]
       }
@@ -59,7 +62,7 @@ module "telemetry_proxy" {
         allow_insecure_connection = false
         external_enabled          = true
         target_port               = local.port
-        traffic_weight            = {
+        traffic_weight = {
           latest_revision = true
           percentage      = 100
         }
@@ -69,11 +72,11 @@ module "telemetry_proxy" {
   container_app_secrets = {
     telemetry_proxy = [
       {
-        name = "secname"
+        name  = "secname"
         value = azurerm_container_registry_token_password.pull_password.password1[0].value
       },
       {
-        name = "ikey"
+        name  = "ikey"
         value = azurerm_application_insights.this.instrumentation_key
       }
     ]
