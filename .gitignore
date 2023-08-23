@@ -27,6 +27,7 @@ website/node_modules
 .python-version
 .terraform.tfstate.lock.info
 .terraform.lock.hcl
+.terraform
 
 website/vendor
 
