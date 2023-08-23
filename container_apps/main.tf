@@ -2,36 +2,30 @@ locals {
   image_name = "telemetry_proxy"
 }
 
-resource "azurerm_resource_group" "this" {
-  location = "eastus"
-  name     = "avm-telemetry"
-}
-
 locals {
   port = 8080
 }
 
 resource "azurerm_application_insights" "this" {
   application_type    = "other"
-  location            = azurerm_resource_group.this.location
+  location            = var.location
   name                = "avm-telemetry"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = var.resource_group_name
 }
-
 
 module "telemetry_proxy" {
   source                                             = "Azure/container-apps/azure"
   version                                            = "0.2.0"
   container_app_environment_name                     = "telemetry-proxy"
-  container_app_environment_infrastructure_subnet_id = azurerm_subnet.container_apps.id
+  container_app_environment_infrastructure_subnet_id = var.subnet_id
   container_apps = {
     telemetry_proxy = {
       name          = "telemetry-proxy"
       revision_mode = "Single"
       registry = [
         {
-          server               = azurerm_container_registry.this.login_server
-          username             = azurerm_container_registry_token.pull.name
+          server               = var.acr_url
+          username             = var.acr_user_name
           password_secret_name = "secname"
         }
       ]
@@ -41,7 +35,7 @@ module "telemetry_proxy" {
             name   = "telemetry-proxy"
             memory = "0.5Gi"
             cpu    = 0.25
-            image  = "${docker_image.proxy.name}:${var.image_tag}"
+            image  = var.docker_image
             env = toset(concat([
               {
                 name        = "INSTRUMENTATION_KEY"
@@ -73,7 +67,7 @@ module "telemetry_proxy" {
     telemetry_proxy = [
       {
         name  = "secname"
-        value = azurerm_container_registry_token_password.pull_password.password1[0].value
+        value = var.acr_user_password
       },
       {
         name  = "ikey"
@@ -81,8 +75,7 @@ module "telemetry_proxy" {
       }
     ]
   }
-  location                     = azurerm_resource_group.this.location
+  location                     = var.location
   log_analytics_workspace_name = "telemetry-proxy-log-analytics-workspace"
-  resource_group_name          = azurerm_resource_group.this.name
-  depends_on                   = [terraform_data.docker_push]
+  resource_group_name          = var.resource_group_name
 }

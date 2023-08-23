@@ -4,9 +4,9 @@ module "public_ip" {
 }
 
 resource "azurerm_container_registry" "this" {
-  location                      = azurerm_resource_group.this.location
+  location                      = var.location
   name                          = "avmtelemetry"
-  resource_group_name           = azurerm_resource_group.this.name
+  resource_group_name           = var.resource_group_name
   sku                           = "Premium"
   public_network_access_enabled = true
 
@@ -64,15 +64,15 @@ resource "azurerm_container_registry_token_password" "push_password" {
 
 resource "azurerm_virtual_network" "vnet" {
   address_space       = ["192.168.0.0/16"]
-  location            = azurerm_resource_group.this.location
+  location            = var.location
   name                = "telemetry"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_subnet" "acr" {
   address_prefixes                              = [cidrsubnet("192.168.0.0/16", 7, 0)]
   name                                          = "acr"
-  resource_group_name                           = azurerm_resource_group.this.name
+  resource_group_name                           = azurerm_virtual_network.vnet.resource_group_name
   virtual_network_name                          = azurerm_virtual_network.vnet.name
   private_endpoint_network_policies_enabled     = false
   private_link_service_network_policies_enabled = false
@@ -82,7 +82,7 @@ resource "azurerm_subnet" "acr" {
 resource "azurerm_subnet" "container_apps" {
   address_prefixes                              = [cidrsubnet("192.168.0.0/16", 7, 1)]
   name                                          = "containerapps"
-  resource_group_name                           = azurerm_resource_group.this.name
+  resource_group_name                           = azurerm_virtual_network.vnet.resource_group_name
   virtual_network_name                          = azurerm_virtual_network.vnet.name
   private_endpoint_network_policies_enabled     = false
   private_link_service_network_policies_enabled = false
@@ -90,9 +90,9 @@ resource "azurerm_subnet" "container_apps" {
 }
 
 resource "azurerm_private_endpoint" "pep" {
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_virtual_network.vnet.location
   name                = "mype"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_virtual_network.vnet.resource_group_name
   subnet_id           = azurerm_subnet.acr.id
 
   private_service_connection {
@@ -105,13 +105,13 @@ resource "azurerm_private_endpoint" "pep" {
 
 resource "azurerm_private_dns_zone" "pdz" {
   name                = "privatelink.azurecr.io"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "vnetlink_private" {
   name                  = "mydnslink"
   private_dns_zone_name = azurerm_private_dns_zone.pdz.name
-  resource_group_name   = azurerm_resource_group.this.name
+  resource_group_name   = var.resource_group_name
   virtual_network_id    = azurerm_virtual_network.vnet.id
 }
 
