@@ -11,29 +11,45 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 
-func main() {
-	port := 8080
-	portEnv := os.Getenv("PORT")
-	if p, err := strconv.Atoi(portEnv); portEnv != "" && err != nil {
-		port = p
-	}
-	iKey := os.Getenv("INSTRUMENTATION_KEY")
-	telemetryConfig := appinsights.NewTelemetryConfiguration(iKey)
-	telemetryConfig.MaxBatchSize = 100
-	telemetryConfig.MaxBatchInterval = time.Second
-	client := appinsights.NewTelemetryClientFromConfig(telemetryConfig)
+type telemetryClient interface {
+	Track(telemetry appinsights.Telemetry)
+}
 
+func main() {
+	diagnostics()
+	newApp(newTelemetryClient()).Listen(fmt.Sprintf(":%d", port()))
+}
+
+func diagnostics() {
 	if diagEnabledEnv := os.Getenv("DIAG"); diagEnabledEnv != "" {
 		appinsights.NewDiagnosticsMessageListener(func(msg string) error {
 			fmt.Printf("[%s] %s\n", time.Now().Format(time.DateTime), msg)
 			return nil
 		})
 	}
+}
 
+func newTelemetryClient() appinsights.TelemetryClient {
+	c := appinsights.NewTelemetryConfiguration(os.Getenv("INSTRUMENTATION_KEY"))
+	c.MaxBatchSize = 100
+	c.MaxBatchInterval = time.Second
+	return appinsights.NewTelemetryClientFromConfig(c)
+}
+
+func port() int {
+	port := 8080
+	portEnv := os.Getenv("PORT")
+	if p, err := strconv.Atoi(portEnv); portEnv != "" && err != nil {
+		port = p
+	}
+	return port
+}
+
+func newApp(client telemetryClient) *iris.Application {
 	app := iris.New()
 	app.Use(iris.Compression)
 	app.Post("/telemetry", func(c *context.Context) {
-		var tags = make(map[string]string, 0)
+		var tags map[string]string
 		err := c.ReadBody(&tags)
 		if err != nil {
 			c.StatusCode(iris.StatusBadRequest)
@@ -57,5 +73,5 @@ func main() {
 		client.Track(telemetry)
 		c.StatusCode(iris.StatusOK)
 	})
-	app.Listen(fmt.Sprintf(":%d", port))
+	return app
 }
