@@ -26,4 +26,4 @@ This command will use your Azure credentials to provision the resources defined 
 
 ## Contribution
 
-Contributions to this repository are welcome. Please ensure that you update the README when adding or modifying behaviour.
+Contributions to this repository are limited to Microsoft FTE only. Please ensure that you update the README when adding or modifying behaviour.
