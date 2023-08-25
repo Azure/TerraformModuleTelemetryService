@@ -79,3 +79,8 @@ module "telemetry_proxy" {
   log_analytics_workspace_name = "telemetry-proxy-log-analytics-workspace"
   resource_group_name          = var.resource_group_name
 }
+
+resource "local_file" "ingress_url" {
+  filename = "${path.module}/ingress"
+  content = module.telemetry_proxy.container_app_fqdn["telemetry_proxy"]
+}

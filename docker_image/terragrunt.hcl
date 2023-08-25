@@ -1,3 +1,7 @@
+include "root" {
+  path = find_in_parent_folders()
+}
+
 dependency "acr" {
   config_path  = "../acr"
   mock_outputs = {
