@@ -7,7 +7,7 @@ on:
       - '**.tf'
       - '**.tf.json'
       - '.github/workflows/**'
-      - '**.hcl"
+      - '**.hcl'
 
 jobs:
   prepr-check:

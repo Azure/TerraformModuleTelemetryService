@@ -50,15 +50,15 @@ jobs:
           export ARM_TENANT_ID=$(az login --identity --username $MSI_ID | jq -r '.[0] | .tenantId')
           export ARM_USE_MSI=true
           sh scripts/terragrunt-init.sh
+          echo '=========> Existing resources:' > output
+          terragrunt state list >> output
+          terragrunt show -no-color tfplan >> output
       - name: Show Terraform Plan
         if: env.PR_NUM != ''
         id: tfshow
         uses: mathiasvr/command-output@34408ea3d0528273faff3d9e201761ae96106cd0 # 2.0.0
         with:
-          run:
-            echo '=========> Existing resources:'
-            terragrunt state list
-            terragrunt show -no-color tfplan
+          run: cat output
       - name: PR comment with reactions
         if: env.PR_NUM != ''
         uses: thollander/actions-comment-pull-request@8a3fad13c20088e9eb0805666b9fe49509d2fec8 # 1.6.0
