@@ -35,5 +35,3 @@ website/vendor
 
 .env.sh
 .env
-
-backend.tf
