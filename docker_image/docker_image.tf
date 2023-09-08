@@ -1,7 +1,7 @@
 resource "docker_image" "proxy" {
   name = "${var.registry_url}/telemetry_proxy"
   build {
-    context = "."
+    context = path.module
     tag     = ["${var.registry_url}/telemetry_proxy:${var.image_tag}"]
   }
   triggers = {

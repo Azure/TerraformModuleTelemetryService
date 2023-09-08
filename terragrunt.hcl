@@ -1,19 +1,3 @@
-generate "backend" {
-  path      = "backend.tf"
-  if_exists = "overwrite_terragrunt"
-  contents = <<EOF
-terraform {
-  backend "azurerm" {
-    storage_account_name = "tfmod1espoolstatestorage"
-    container_name       = "azure-verified-tfmod-runner-state"
-    key                  = "telemetry/${path_relative_to_include()}.terraform.tfstate"
-    snapshot             = true
-    use_msi              = true
-  }
-}
-EOF
-}
-
 retry_max_attempts       = 60
 retry_sleep_interval_sec = 60
 retryable_errors         = [
