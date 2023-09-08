@@ -15,7 +15,7 @@ resource "azurerm_container_registry" "this" {
 
     ip_rule {
       action   = "Allow"
-      ip_range = "${module.public_ip.public_ip}/32"
+      ip_range = sensitive("${module.public_ip.public_ip}/32")
     }
     virtual_network {
       action    = "Allow"
@@ -41,6 +41,10 @@ resource "azurerm_container_registry_token" pull {
   name                    = "pull-token"
   resource_group_name     = azurerm_container_registry.this.resource_group_name
   scope_map_id            = data.azurerm_container_registry_scope_map.pull.id
+
+  lifecycle {
+    ignore_changes = [scope_map_id]
+  }
 }
 
 resource "azurerm_container_registry_token_password" "pull_password" {
@@ -54,6 +58,10 @@ resource "azurerm_container_registry_token" "push" {
   name                    = "push-token"
   resource_group_name     = azurerm_container_registry.this.resource_group_name
   scope_map_id            = data.azurerm_container_registry_scope_map.push.id
+
+  lifecycle {
+    ignore_changes = [scope_map_id]
+  }
 }
 
 resource "azurerm_container_registry_token_password" "push_password" {
