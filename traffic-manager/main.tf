@@ -10,8 +10,8 @@ resource "azurerm_traffic_manager_profile" "this" {
   monitor_config {
     port                        = 443
     protocol                    = "HTTPS"
-    expected_status_code_ranges = ["200"]
-    interval_in_seconds         = 3600
+    expected_status_code_ranges = ["200-202"]
+    interval_in_seconds         = 30
     path                        = "/telemetry"
     timeout_in_seconds          = 10
   }
