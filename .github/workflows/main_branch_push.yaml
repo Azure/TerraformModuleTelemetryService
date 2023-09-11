@@ -39,6 +39,7 @@ jobs:
           export ARM_USE_MSI=true
           sh scripts/terragrunt-init.sh
           terragrunt apply -auto-approve -input=false --compact-warnings tfplan
+          terragrunt output
       - name: Delete tfplan file
         if: steps.PR.outputs.number != ''
         run: |

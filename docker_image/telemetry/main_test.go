@@ -22,6 +22,13 @@ func (m *mockClient) Track(telemetry appinsights.Telemetry) {
 	m.telemetries = append(m.telemetries, telemetry)
 }
 
+func Test_TelemetryGetShouldReturnOk(t *testing.T) {
+	e, _ := sut(t)
+	body := e.GET(endpoint).Expect().Status(iris.StatusOK).Body()
+	assert.NotNil(t, body)
+	assert.Equal(t, "ok", body.Raw())
+}
+
 func Test_TelemetryWithoutEventShouldReturnError(t *testing.T) {
 	e, _ := sut(t)
 	body := map[string]string{

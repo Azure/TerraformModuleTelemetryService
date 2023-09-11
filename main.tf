@@ -26,3 +26,10 @@ module "container_apps" {
   resource_group_name = module.resource_group.resource_group_name
   subnet_id           = module.acr.container_apps_subnet_id
 }
+
+module "traffic_manager" {
+  source                  = "./traffic-manager"
+  resource_group_location = module.resource_group.resource_group_location
+  resource_group_name     = module.resource_group.resource_group_name
+  telemetry_svc_fqdn      = trimprefix(module.container_apps.app_url["telemetry_proxy"], "https://")
+}

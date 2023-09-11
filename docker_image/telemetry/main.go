@@ -48,7 +48,8 @@ func port() int {
 func newApp(client telemetryClient) *iris.Application {
 	app := iris.New()
 	app.Use(iris.Compression)
-	app.Post("/telemetry", func(c *context.Context) {
+	endpoint := "/telemetry"
+	app.Post(endpoint, func(c *context.Context) {
 		var tags map[string]string
 		err := c.ReadBody(&tags)
 		if err != nil {
@@ -72,6 +73,10 @@ func newApp(client telemetryClient) *iris.Application {
 		telemetry.Tags.User().SetAccountId(resourceId)
 		client.Track(telemetry)
 		c.StatusCode(iris.StatusOK)
+	})
+	app.Get(endpoint, func(c *context.Context) {
+		c.StatusCode(iris.StatusOK)
+		c.WriteString("ok")
 	})
 	return app
 }
