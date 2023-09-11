@@ -31,5 +31,5 @@ module "traffic_manager" {
   source                  = "./traffic-manager"
   resource_group_location = module.resource_group.resource_group_location
   resource_group_name     = module.resource_group.resource_group_name
-  telemetry_svc_fqdn      = trimprefix(module.container_apps.app_url, "https://")
+  telemetry_svc_fqdn      = trimprefix(module.container_apps.app_url["telemetry_proxy"], "https://")
 }
