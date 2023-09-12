@@ -4,7 +4,7 @@ resource "azurerm_traffic_manager_profile" "this" {
   traffic_routing_method = "Performance"
 
   dns_config {
-    relative_name = "telemetry"
+    relative_name = "avmtftelemetry"
     ttl           = 600
   }
   monitor_config {

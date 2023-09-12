@@ -74,6 +74,7 @@ func newApp(client telemetryClient) *iris.Application {
 		client.Track(telemetry)
 		c.StatusCode(iris.StatusOK)
 	})
+	// For health check
 	app.Get(endpoint, func(c *context.Context) {
 		c.StatusCode(iris.StatusOK)
 		c.WriteString("ok")
