@@ -1,3 +1,3 @@
-output "telemetry_endpoint" {
-  value = module.traffic_manager.tm_profile_fqdn
+output "endpoint_blob_url" {
+  value = module.endpoint_blob.blob_url
 }
