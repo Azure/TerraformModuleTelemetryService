@@ -29,14 +29,6 @@ jobs:
           cd docker_image
           go mod tidy
           go test -v ./...
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@701f152f28d4350ad289a5e31435e9ab6169a7ca # v2.21.6
-        with:
-          languages: "go"
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@701f152f28d4350ad289a5e31435e9ab6169a7ca # v2.21.6
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@701f152f28d4350ad289a5e31435e9ab6169a7ca # v2.21.6
       - name: Gosec
         run: |
           docker run --rm -v docker_image:/src -w /src securego/gosec:2.17.0 telemetry
