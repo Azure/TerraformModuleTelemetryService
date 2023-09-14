@@ -44,6 +44,7 @@ jobs:
         if: steps.PR.outputs.number != ''
         run: |
           az storage blob delete --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{steps.PR.outputs.number}} --auth-mode login
+          az storage blob delete --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{steps.PR.outputs.number}}.txt --auth-mode login
       - name: PR comment with reactions
         if: steps.PR.outputs.number != ''
         uses: thollander/actions-comment-pull-request@8a3fad13c20088e9eb0805666b9fe49509d2fec8 # 1.6.0

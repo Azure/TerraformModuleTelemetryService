@@ -30,10 +30,11 @@ jobs:
           export ARM_TENANT_ID=$(az login --identity --username $MSI_ID | jq -r '.[0] | .tenantId')
           export ARM_USE_MSI=true
           sh scripts/terragrunt-init.sh
-          terragrunt plan -out tfplan
+          terragrunt plan -no-color -out tfplan | tee tfplan.txt
       - name: Upload plan file
         run: |
           az storage blob upload -f tfplan --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ github.event.number }} --tier Cool --no-progress --overwrite --auth-mode login
+          az storage blob upload -f tfplan.txt --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ github.event.number }}.txt --tier Cool --no-progress --overwrite --auth-mode login
       - name: Save the PR number in an artifact
         env:
           PR_NUM: ${{ github.event.number }}

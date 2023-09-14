@@ -33,7 +33,7 @@ jobs:
         if: env.PR_NUM != ''
         run: |
           az login --identity --username $MSI_ID > /dev/null
-          az storage blob download --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ env.PR_NUM }} --no-progress --file tfplan --auth-mode login
+          az storage blob download --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ env.PR_NUM }}.txt --no-progress --file tfplan.txt --auth-mode login
       - uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # 2.0.3
         if: env.PR_NUM != ''
       - name: Setup Terragrunt
@@ -52,7 +52,7 @@ jobs:
           sh scripts/terragrunt-init.sh
           echo '=========> Existing resources:' > output
           terragrunt state list | tee -a output
-          terragrunt show -no-color tfplan | tee -a output
+          cat tfplan.txt | tee -a output
       - name: Show Terraform Plan
         if: env.PR_NUM != ''
         id: tfshow

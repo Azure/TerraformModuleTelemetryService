@@ -14,3 +14,4 @@ jobs:
           echo "========> github.event.pull_request.merged is:"
           echo ${{github.event.pull_request.merged}}
           az storage blob delete --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ github.event.number }} --auth-mode login || echo "tfplan file cleanup error but we tolerate it."
+          az storage blob delete --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ github.event.number }}.txt --auth-mode login || echo "tfplan file cleanup error but we tolerate it."
