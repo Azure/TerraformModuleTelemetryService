@@ -1,6 +1,7 @@
 resource "null_resource" "go_code_keeper" {
   triggers = {
-    code_hash = filemd5("${path.module}/telemetry/main.go")
+    code_hash  = filemd5("${path.module}/telemetry/main.go")
+    dockerfile = filemd5("${path.module}/Dockerfile")
   }
 }
 
@@ -11,7 +12,8 @@ resource "docker_image" "proxy" {
     tag     = ["${var.registry_url}/telemetry_proxy:${var.image_tag}"]
   }
   triggers = {
-    code_hash = filemd5("${path.module}/telemetry/main.go")
+    code_hash  = filemd5("${path.module}/telemetry/main.go")
+    dockerfile = filemd5("${path.module}/Dockerfile")
   }
 
   lifecycle {
@@ -20,7 +22,7 @@ resource "docker_image" "proxy" {
 }
 
 resource "docker_registry_image" "proxy" {
-  name = docker_image.proxy.name
+  name          = docker_image.proxy.name
   keep_remotely = true
 
   lifecycle {

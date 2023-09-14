@@ -1,7 +1,7 @@
 name: TF Plan Comment
 on:
   workflow_run:
-    workflows: ["Pre Pull Request Check"]
+    workflows: ["Terraform Plan"]
     types:
       - completed
 
@@ -10,14 +10,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  main-branch-push:
+  plan-comment:
     runs-on: [self-hosted, 1ES.Pool=TerraformModuleTelemetryService]
     steps:
       - name: Download workflow artifact
         uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 #v2.27.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: pr-check.yaml
+          workflow: terraform-plan.yaml
           run_id: ${{ github.event.workflow_run.id }}
       - name: Read the pr_num file
         id: pr_num_reader

@@ -17,7 +17,7 @@ type telemetryClient interface {
 
 func main() {
 	diagnostics()
-	newApp(newTelemetryClient()).Listen(fmt.Sprintf(":%d", port()))
+	_ = newApp(newTelemetryClient()).Listen(fmt.Sprintf(":%d", port()))
 }
 
 func diagnostics() {
@@ -54,19 +54,19 @@ func newApp(client telemetryClient) *iris.Application {
 		err := c.ReadBody(&tags)
 		if err != nil {
 			c.StatusCode(iris.StatusBadRequest)
-			c.WriteString("incorrect tags")
+			_, _ = c.WriteString("incorrect tags")
 			return
 		}
 		var event, resourceId string
 		var ok bool
 		if event, ok = tags["event"]; !ok {
 			c.StatusCode(iris.StatusBadRequest)
-			c.WriteString("event required")
+			_, _ = c.WriteString("event required")
 			return
 		}
 		if resourceId, ok = tags["resource_id"]; !ok {
 			c.StatusCode(iris.StatusBadRequest)
-			c.WriteString("resource_id required")
+			_, _ = c.WriteString("resource_id required")
 		}
 		telemetry := appinsights.NewEventTelemetry(event)
 		telemetry.Properties = tags
@@ -77,7 +77,7 @@ func newApp(client telemetryClient) *iris.Application {
 	// For health check
 	app.Get(endpoint, func(c *context.Context) {
 		c.StatusCode(iris.StatusOK)
-		c.WriteString("ok")
+		_, _ = c.WriteString("ok")
 	})
 	return app
 }

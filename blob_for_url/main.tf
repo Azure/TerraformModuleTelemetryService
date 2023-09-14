@@ -3,7 +3,7 @@ resource "azurerm_storage_account" "endpoint" {
   account_tier                  = "Standard"
   location                      = var.resource_group_location
   name                          = "avmtftelemetrysvc"
-  resource_group_name           = var.resource_group_location
+  resource_group_name           = var.resource_group_name
   public_network_access_enabled = true
 
   network_rules {
