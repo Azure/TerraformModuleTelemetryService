@@ -11,6 +11,7 @@ resource "azurerm_application_insights" "this" {
   location            = var.location
   name                = "avm-telemetry"
   resource_group_name = var.resource_group_name
+  retention_in_days   = 730
 }
 
 module "telemetry_proxy" {
