@@ -30,9 +30,8 @@ jobs:
         if: steps.PR.outputs.number != ''
         run: |
           az storage blob download --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{steps.PR.outputs.number}} --no-progress --file tfplan --auth-mode login
-      - uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # 2.0.3
-        if: steps.PR.outputs.number != ''
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        if: steps.PR.outputs.number != ''
         with:
           terraform_wrapper: false
       - name: Setup Terragrunt

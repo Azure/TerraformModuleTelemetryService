@@ -9,19 +9,6 @@ resource "azurerm_container_registry" "this" {
   resource_group_name           = var.resource_group_name
   sku                           = "Premium"
   public_network_access_enabled = true
-
-  network_rule_set {
-    default_action = "Deny"
-
-    ip_rule {
-      action   = "Allow"
-      ip_range = sensitive("${module.public_ip.public_ip}/32")
-    }
-    virtual_network {
-      action    = "Allow"
-      subnet_id = azurerm_subnet.acr.id
-    }
-  }
 }
 
 data "azurerm_container_registry_scope_map" "pull" {
