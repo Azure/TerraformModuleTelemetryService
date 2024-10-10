@@ -10,9 +10,7 @@ module "acr" {
 
 module "docker_image" {
   source       = "./docker_image"
-  password     = module.acr.push_password
   registry_url = module.acr.registry_url
-  username     = module.acr.push_username
   image_tag    = var.image_tag
 }
 
