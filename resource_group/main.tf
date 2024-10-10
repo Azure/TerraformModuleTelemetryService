@@ -3,6 +3,7 @@ resource "azurerm_resource_group" "this" {
   name     = "avm-telemetry"
 
   tags = {
-    env = "prod"
+    do_not_delete = ""
+    env           = "prod"
   }
 }

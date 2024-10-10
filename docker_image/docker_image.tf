@@ -1,6 +1,8 @@
 resource "null_resource" "go_code_keeper" {
   triggers = {
     code_hash  = filemd5("${path.module}/telemetry/main.go")
+    go_mod     = filemd5("${path.module}/go.mod")
+    go_sum     = filemd5("${path.module}/go.sum")
     dockerfile = filemd5("${path.module}/Dockerfile")
   }
 }
