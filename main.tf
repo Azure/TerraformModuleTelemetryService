@@ -12,6 +12,7 @@ module "docker_image" {
   source       = "./docker_image"
   registry_url = module.acr.registry_url
   image_tag    = var.image_tag
+  depends_on = [module.acr]
 }
 
 module "container_apps" {
