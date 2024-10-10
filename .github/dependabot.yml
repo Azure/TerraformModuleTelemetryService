@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/docker_image"
+    schedule:
+      interval: "weekly"

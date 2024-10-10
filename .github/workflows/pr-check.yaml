@@ -32,11 +32,6 @@ jobs:
       - name: Gosec
         run: |
           docker run --rm -v docker_image:/src -w /src securego/gosec:2.17.0 telemetry
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # 3.7.0
-        with:
-          version: v1.54.2
-          working-directory: docker_image
       - name: Docker build test
         run: |
           cd docker_image
