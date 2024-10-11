@@ -8,6 +8,10 @@ on:
       - '**.tf.json'
       - '.github/workflows/**'
       - '**.hcl'
+      - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
+      - '**/Dockerfile'
 permissions:
   contents: write
   id-token: write
