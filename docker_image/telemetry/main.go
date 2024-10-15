@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -49,6 +50,10 @@ func newApp(client telemetryClient) *iris.Application {
 	app := iris.New()
 	app.Use(iris.Compression)
 	endpoint := "/telemetry"
+	sourceRegexs := filterSources()
+	if len(sourceRegexs) == 0 {
+		panic("AT LEAST SOURCE_REGEX_0 ENVIRONMENT VARIABLE IS REQUIRED")
+	}
 	app.Post(endpoint, func(c *context.Context) {
 		var tags map[string]string
 		err := c.ReadBody(&tags)
@@ -57,8 +62,26 @@ func newApp(client telemetryClient) *iris.Application {
 			_, _ = c.WriteString("incorrect tags")
 			return
 		}
-		var event, resourceId string
+		var source string
 		var ok bool
+		if source, ok = tags["module_source"]; !ok {
+			c.StatusCode(iris.StatusBadRequest)
+			_, _ = c.WriteString("module_source required")
+			return
+		}
+		match := false
+		for _, r := range sourceRegexs {
+			if r.MatchString(source) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			c.StatusCode(iris.StatusForbidden)
+			_, _ = c.WriteString("source not allowed")
+			return
+		}
+		var event, resourceId string
 		if event, ok = tags["event"]; !ok {
 			c.StatusCode(iris.StatusBadRequest)
 			_, _ = c.WriteString("event required")
@@ -80,4 +103,17 @@ func newApp(client telemetryClient) *iris.Application {
 		_, _ = c.WriteString("ok")
 	})
 	return app
+}
+
+func filterSources() []*regexp.Regexp {
+	var sources []*regexp.Regexp
+	for i := 0; true; i++ {
+		regex := os.Getenv(fmt.Sprintf("SOURCE_REGEX_%d", i))
+		if regex == "" {
+			break
+		}
+		compile := regexp.MustCompile(regex)
+		sources = append(sources, compile)
+	}
+	return sources
 }
