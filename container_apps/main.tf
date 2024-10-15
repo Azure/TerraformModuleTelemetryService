@@ -61,15 +61,15 @@ module "telemetry_proxy" {
           }
         ]
       }
-      ingress = {
-        allow_insecure_connection = false
-        external_enabled          = true
-        target_port               = local.port
-        traffic_weight = {
-          latest_revision = true
-          percentage      = 100
-        }
-      }
+#       ingress = {
+#         allow_insecure_connection = false
+#         external_enabled          = true
+#         target_port               = local.port
+#         traffic_weight = {
+#           latest_revision = true
+#           percentage      = 100
+#         }
+#       }
     }
   }
   container_app_secrets = {
