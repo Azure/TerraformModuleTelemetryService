@@ -43,6 +43,7 @@ jobs:
           export ARM_OIDC_REQUEST_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
           export ARM_OIDC_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL
           sh scripts/terragrunt-init.sh
+          set -o pipefail
           terragrunt plan -no-color -out tfplan | tee tfplan.txt
       - name: Azure login
         uses: azure/login@a65d910e8af852a8061c627c456678983e180302 #v2.2.0
