@@ -46,10 +46,18 @@ module "telemetry_proxy" {
                 name  = "PORT"
                 value = local.port
               },
-              ], var.telemetry_proxy_diag ? [{
+              ], (var.telemetry_proxy_diag ? [{
                 name  = "DIAG"
                 value = "1"
-            }] : []))
+            }] : []), [for i, r in [
+              "registry.terraform.io/[A|a]zure/.+",
+              "registry.opentofu.io/[A|a]zure/.+",
+              "git::https://github\\.com/[A|a]zure/.+",
+              "git::ssh:://git@github\\.com/[A|a]zure/.+",
+            ] : {
+              name = "SOURCE_REGEX_${i}"
+              value = r
+            }]))
           }
         ]
       }
