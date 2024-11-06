@@ -9,8 +9,16 @@ locals {
 resource "azurerm_application_insights" "this" {
   application_type    = "other"
   location            = var.location
-  name                = "avm-telemetry"
+  name                = "ai-avm-telemetry"
   resource_group_name = var.resource_group_name
+  workspace_id        = azurerm_log_analytics_workspace.this.id
+}
+
+resource "azurerm_log_analytics_workspace" "this" {
+  name                = "law-avm-telemetry"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  sku                 = "PerGB2018"
   retention_in_days   = 730
 }
 
@@ -49,14 +57,14 @@ module "telemetry_proxy" {
               ], (var.telemetry_proxy_diag ? [{
                 name  = "DIAG"
                 value = "1"
-            }] : []), [for i, r in [
-              "registry.terraform.io/[A|a]zure/.+",
-              "registry.opentofu.io/[A|a]zure/.+",
-              "git::https://github\\.com/[A|a]zure/.+",
-              "git::ssh:://git@github\\.com/[A|a]zure/.+",
-            ] : {
-              name = "SOURCE_REGEX_${i}"
-              value = r
+                }] : []), [for i, r in [
+                "registry.terraform.io/[A|a]zure/.+",
+                "registry.opentofu.io/[A|a]zure/.+",
+                "git::https://github\\.com/[A|a]zure/.+",
+                "git::ssh:://git@github\\.com/[A|a]zure/.+",
+                ] : {
+                name  = "SOURCE_REGEX_${i}"
+                value = r
             }]))
           }
         ]
