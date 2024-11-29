@@ -71,7 +71,7 @@ module "telemetry_proxy" {
       }
       ingress = {
         allow_insecure_connection = false
-        external_enabled          = false
+        external_enabled          = true
         target_port               = local.port
         traffic_weight = {
           latest_revision = true
