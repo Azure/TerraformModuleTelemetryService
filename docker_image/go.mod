@@ -8,7 +8,7 @@ require (
 	github.com/iris-contrib/httpexpect/v2 v2.15.2
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
