@@ -12,7 +12,7 @@ module "docker_image" {
   source       = "./docker_image"
   registry_url = module.acr.registry_url
   image_tag    = var.image_tag
-  depends_on = [module.acr]
+  depends_on   = [module.acr]
 }
 
 module "container_apps" {
@@ -32,4 +32,17 @@ module "endpoint_blob" {
   endpoint                = "${module.container_apps.app_url["telemetry_proxy"]}/telemetry"
   resource_group_location = module.resource_group.resource_group_location
   resource_group_name     = module.resource_group.resource_group_name
+}
+
+data "azuread_group" "modtm_reader" {
+  display_name = "Modtm Telemetry Reader"
+}
+
+resource "azurerm_role_assignment" "telemetry_reader" {
+  for_each = tomap({
+    application_insight = module.container_apps.application_insights_id
+    log_analytics       = module.container_apps.log_analytics_workspace
+  })
+  role_definition_name = "Reader"
+  principal_id         = data.azuread_group.modtm_reader.object_id
 }
