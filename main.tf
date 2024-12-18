@@ -44,5 +44,6 @@ resource "azurerm_role_assignment" "telemetry_reader" {
     log_analytics       = module.container_apps.log_analytics_workspace
   })
   role_definition_name = "Reader"
+  scope                = each.value
   principal_id         = data.azuread_group.modtm_reader.object_id
 }
