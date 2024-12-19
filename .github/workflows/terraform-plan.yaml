@@ -24,7 +24,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # 3.6.0
-      - uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # 2.0.3
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_wrapper: false
@@ -44,7 +43,9 @@ jobs:
           export ARM_OIDC_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL
           sh scripts/terragrunt-init.sh
           set -o pipefail
-          terragrunt plan -no-color -out tfplan | tee tfplan.txt
+          
+          terraform version -json | jq -r .terraform_version > tfplan.txt
+          terragrunt plan -no-color -out tfplan | tee -a tfplan.txt
       - name: Azure login
         uses: azure/login@a65d910e8af852a8061c627c456678983e180302 #v2.2.0
         with:
