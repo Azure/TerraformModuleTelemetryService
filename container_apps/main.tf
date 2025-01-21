@@ -6,22 +6,6 @@ locals {
   port = 8080
 }
 
-resource "azurerm_application_insights" "this" {
-  application_type    = "other"
-  location            = var.location
-  name                = "ai-avm-telemetry"
-  resource_group_name = var.resource_group_name
-  workspace_id        = azurerm_log_analytics_workspace.this.id
-}
-
-resource "azurerm_log_analytics_workspace" "this" {
-  name                = "law-avm-telemetry"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  sku                 = "PerGB2018"
-  retention_in_days   = 730
-}
-
 module "telemetry_proxy" {
   source                                             = "Azure/container-apps/azure"
   version                                            = "0.2.0"
@@ -88,7 +72,7 @@ module "telemetry_proxy" {
       },
       {
         name  = "ikey"
-        value = azurerm_application_insights.this.instrumentation_key
+        value = var.application_insights_instrumentation_key
       }
     ]
   }
