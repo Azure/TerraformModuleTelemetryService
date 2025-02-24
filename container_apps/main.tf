@@ -59,7 +59,7 @@ module "telemetry_proxy" {
                 value = "1"
                 }] : []), [for i, r in [
                 "registry.terraform.io/[A|a]zure/.+",
-                "registry.opentofu.io/[A|a]zure/.+",
+                "registry.opentofu.org/[A|a]zure/.+",
                 "git::https://github\\.com/[A|a]zure/.+",
                 "git::ssh:://git@github\\.com/[A|a]zure/.+",
                 ] : {
