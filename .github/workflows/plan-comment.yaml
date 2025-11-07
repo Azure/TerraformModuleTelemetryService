@@ -51,12 +51,6 @@ jobs:
         with:
           terraform_wrapper: false
           terraform_version: ${{ env.TF_VERSION }}
-      - name: Setup Terragrunt
-        if: env.PR_NUM != ''
-        uses: autero1/action-terragrunt@22b4647f1263865cda4473831640e71d349db2cd # 1.3.2
-        with:
-          terragrunt_version: latest
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Init
         if: env.PR_NUM != ''
         env:
@@ -67,9 +61,10 @@ jobs:
         run: |
           export ARM_OIDC_REQUEST_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
           export ARM_OIDC_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL
-          sh scripts/terragrunt-init.sh
+          terraform init || echo "Terraform init error but we tolerate it here."
+          terraform init -reconfigure
           echo '=========> Existing resources:' > output
-          terragrunt state list | tee -a output
+          terraform state list | tee -a output
           cat tfplan.txt | tee -a output
       - name: Show Terraform Plan
         if: env.PR_NUM != ''
