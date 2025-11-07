@@ -33,17 +33,3 @@ module "endpoint_blob" {
   resource_group_location = module.resource_group.resource_group_location
   resource_group_name     = module.resource_group.resource_group_name
 }
-
-data "azuread_group" "modtm_reader" {
-  display_name = "Modtm Telemetry Reader"
-}
-
-resource "azurerm_role_assignment" "telemetry_reader" {
-  for_each = tomap({
-    application_insight = module.container_apps.application_insights_id
-    log_analytics       = module.container_apps.log_analytics_workspace
-  })
-  role_definition_name = "Reader"
-  scope                = sensitive(each.value)
-  principal_id         = sensitive(data.azuread_group.modtm_reader.object_id)
-}
