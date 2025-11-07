@@ -52,7 +52,7 @@ jobs:
           export ARM_OIDC_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL
           terraform init || echo "Terraform init error but we tolerate it here."
           terraform init -reconfigure
-          terraform apply -auto-approve -input=false --compact-warnings tfplan
+          terraform apply -auto-approve -input=false -compact-warnings tfplan
           terraform output
       - name: Delete tfplan file
         if: steps.PR.outputs.number != ''
