@@ -41,7 +41,7 @@ jobs:
       - name: Download pr tfplan
         if: env.PR_NUM != ''
         run: |
-          az storage blob download --account-name tfmod1espoolstatestorage --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ env.PR_NUM }}.txt --no-progress --file tfplan.txt --auth-mode login
+          az storage blob download --account-name avmtelemetrystate --container-name azure-verified-tfmod-pull-request-plans --name telemetry/tfplan_${{ env.PR_NUM }}.txt --no-progress --file tfplan.txt --auth-mode login
       - name: Read Terraform version
         if: env.PR_NUM != ''
         id: read_version
