@@ -2,7 +2,7 @@ resource "azurerm_storage_account" "endpoint" {
   account_replication_type      = "GRS"
   account_tier                  = "Standard"
   location                      = var.resource_group_location
-  name                          = "avmtftelemetrysvc2"
+  name                          = "avmtftelemetrysvc"
   resource_group_name           = var.resource_group_name
   public_network_access_enabled = true
 
