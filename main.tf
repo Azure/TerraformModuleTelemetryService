@@ -26,10 +26,3 @@ module "container_apps" {
   subnet_id            = module.acr.container_apps_subnet_id
   telemetry_proxy_diag = true
 }
-
-module "endpoint_blob" {
-  source                  = "./blob_for_url"
-  endpoint                = "${module.container_apps.app_url["telemetry_proxy"]}/telemetry"
-  resource_group_location = module.resource_group.resource_group_location
-  resource_group_name     = module.resource_group.resource_group_name
-}
