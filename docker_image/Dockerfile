@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1.22-bullseye as builder
+FROM mcr.microsoft.com/devcontainers/go:1.25 as builder
 WORKDIR /src
 COPY . /src
 
