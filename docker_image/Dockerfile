@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1.25 as builder
+FROM golang:1.25.7 as builder
 WORKDIR /src
 COPY . /src
 
