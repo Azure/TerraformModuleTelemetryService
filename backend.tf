@@ -5,6 +5,6 @@ terraform {
     container_name       = "azure-verified-tfmod-runner-state"
     key                  = "telemetry/terraform.tfstate"
     snapshot             = true
-    use_msi              = true
+    use_oidc             = true
   }
 }
