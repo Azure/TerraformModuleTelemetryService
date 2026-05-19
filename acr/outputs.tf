@@ -1,5 +1,5 @@
 output "push_password" {
-  value = azurerm_container_registry_token_password.push_password.password1[0].value
+  value     = azurerm_container_registry_token_password.push_password.password1[0].value
   sensitive = true
 }
 
@@ -12,7 +12,7 @@ output "pull_username" {
 }
 
 output "pull_password" {
-  value = azurerm_container_registry_token_password.pull_password.password1[0].value
+  value     = azurerm_container_registry_token_password.pull_password.password1[0].value
   sensitive = true
 }
 
