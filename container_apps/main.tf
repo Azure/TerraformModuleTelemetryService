@@ -76,8 +76,8 @@ resource "azurerm_monitor_metric_alert" "telemetry_proxy_heartbeat" {
 
   description              = "AVM Telemetry proxy heartbeat failed from one or more test locations."
   severity                 = 2
-  frequency                = "PT10M"
-  window_size              = "PT10M"
+  frequency                = "PT5M"
+  window_size              = "PT5M"
   target_resource_type     = "Microsoft.Insights/webtests"
   target_resource_location = var.location
 
