@@ -13,6 +13,10 @@ data "azurerm_role_definition" "owner" {
   scope = data.azurerm_subscription.current.id
 }
 
+locals {
+  owner_role_definition_id = split("/", data.azurerm_role_definition.owner.role_definition_id)[length(split("/", data.azurerm_role_definition.owner.role_definition_id)) - 1]
+}
+
 resource "azurerm_application_insights" "this" {
   application_type    = "other"
   location            = var.location
@@ -61,7 +65,7 @@ resource "azurerm_monitor_action_group" "telemetry_proxy" {
 
   arm_role_receiver {
     name                    = "subscription-owners"
-    role_id                 = data.azurerm_role_definition.owner.role_definition_id
+    role_id                 = local.owner_role_definition_id
     use_common_alert_schema = true
   }
 }
