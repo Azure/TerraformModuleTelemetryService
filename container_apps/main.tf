@@ -45,7 +45,7 @@ resource "azurerm_application_insights_standard_web_test" "telemetry_proxy_heart
   retry_enabled           = true
 
   request {
-    url                              = "https://${module.telemetry_proxy.container_app_fqdn}/telemetry"
+    url                              = "https://${module.telemetry_proxy.container_app_fqdn["telemetry_proxy"]}/telemetry"
     http_verb                        = "GET"
     follow_redirects_enabled         = true
     parse_dependent_requests_enabled = false
