@@ -23,7 +23,7 @@ data "azurerm_container_registry_scope_map" "push" {
   resource_group_name     = azurerm_container_registry.this.resource_group_name
 }
 
-resource "azurerm_container_registry_token" pull {
+resource "azurerm_container_registry_token" "pull" {
   container_registry_name = azurerm_container_registry.this.name
   name                    = "pull-token"
   resource_group_name     = azurerm_container_registry.this.resource_group_name
@@ -69,7 +69,8 @@ resource "azurerm_subnet" "acr" {
   name                                          = "acr"
   resource_group_name                           = azurerm_virtual_network.vnet.resource_group_name
   virtual_network_name                          = azurerm_virtual_network.vnet.name
-  private_endpoint_network_policies_enabled     = false
+  default_outbound_access_enabled               = false
+  private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = false
   service_endpoints                             = ["Microsoft.ContainerRegistry"]
 }
@@ -79,7 +80,8 @@ resource "azurerm_subnet" "container_apps" {
   name                                          = "containerapps"
   resource_group_name                           = azurerm_virtual_network.vnet.resource_group_name
   virtual_network_name                          = azurerm_virtual_network.vnet.name
-  private_endpoint_network_policies_enabled     = false
+  default_outbound_access_enabled               = false
+  private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = false
   service_endpoints                             = ["Microsoft.ContainerRegistry"]
 }

@@ -6,6 +6,13 @@ locals {
   port = 8080
 }
 
+data "azurerm_subscription" "current" {}
+
+data "azurerm_role_definition" "owner" {
+  name  = "Owner"
+  scope = data.azurerm_subscription.current.id
+}
+
 resource "azurerm_application_insights" "this" {
   application_type    = "other"
   location            = var.location
@@ -20,6 +27,69 @@ resource "azurerm_log_analytics_workspace" "this" {
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
   retention_in_days   = 730
+}
+
+resource "azurerm_application_insights_standard_web_test" "telemetry_proxy_heartbeat" {
+  name                    = "telemetry-proxy-heartbeat"
+  resource_group_name     = var.resource_group_name
+  location                = var.location
+  application_insights_id = azurerm_application_insights.this.id
+  geo_locations           = ["us-va-ash-azr", "us-ca-sjc-azr"]
+  frequency               = 300
+  timeout                 = 30
+  enabled                 = true
+  retry_enabled           = true
+
+  request {
+    url                              = "https://${module.telemetry_proxy.container_app_fqdn}/telemetry"
+    http_verb                        = "GET"
+    follow_redirects_enabled         = true
+    parse_dependent_requests_enabled = false
+  }
+
+  validation_rules {
+    expected_status_code        = 200
+    ssl_check_enabled           = true
+    ssl_cert_remaining_lifetime = 7
+  }
+}
+
+resource "azurerm_monitor_action_group" "telemetry_proxy" {
+  name                = "ag-telemetry-proxy"
+  resource_group_name = var.resource_group_name
+  short_name          = "telproxy"
+
+  arm_role_receiver {
+    name                    = "subscription-owners"
+    role_id                 = data.azurerm_role_definition.owner.role_definition_id
+    use_common_alert_schema = true
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "telemetry_proxy_heartbeat" {
+  name                = "telemetry-proxy-heartbeat-failed"
+  resource_group_name = var.resource_group_name
+  scopes = [
+    azurerm_application_insights.this.id,
+    azurerm_application_insights_standard_web_test.telemetry_proxy_heartbeat.id,
+  ]
+
+  description              = "AVM Telemetry proxy heartbeat failed from one or more test locations."
+  severity                 = 2
+  frequency                = "PT10M"
+  window_size              = "PT10M"
+  target_resource_type     = "Microsoft.Insights/webtests"
+  target_resource_location = var.location
+
+  application_insights_web_test_location_availability_criteria {
+    web_test_id           = azurerm_application_insights_standard_web_test.telemetry_proxy_heartbeat.id
+    component_id          = azurerm_application_insights.this.id
+    failed_location_count = 1
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.telemetry_proxy.id
+  }
 }
 
 module "telemetry_proxy" {
