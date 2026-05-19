@@ -1,9 +1,7 @@
 locals {
-  image_name = "telemetry_proxy"
-}
-
-locals {
-  port = 8080
+  image_name               = "telemetry_proxy"
+  port                     = 8080
+  telemetry_proxy_app_name = "telemetry-proxy"
 }
 
 data "azurerm_subscription" "current" {}
@@ -13,8 +11,17 @@ data "azurerm_role_definition" "owner" {
   scope = data.azurerm_subscription.current.id
 }
 
+data "azurerm_container_app" "telemetry_proxy" {
+  name                = local.telemetry_proxy_app_name
+  resource_group_name = var.resource_group_name
+
+  depends_on = [module.telemetry_proxy]
+}
+
 locals {
   owner_role_definition_id = split("/", data.azurerm_role_definition.owner.role_definition_id)[length(split("/", data.azurerm_role_definition.owner.role_definition_id)) - 1]
+  telemetry_proxy_endpoint = "${module.telemetry_proxy.container_app_fqdn["telemetry_proxy"]}/telemetry"
+  telemetry_proxy_arm_id   = data.azurerm_container_app.telemetry_proxy.id
 }
 
 resource "azurerm_application_insights" "this" {
@@ -45,7 +52,7 @@ resource "azurerm_application_insights_standard_web_test" "telemetry_proxy_heart
   retry_enabled           = true
 
   request {
-    url                              = "https://${module.telemetry_proxy.container_app_fqdn["telemetry_proxy"]}/telemetry"
+    url                              = local.telemetry_proxy_endpoint
     http_verb                        = "GET"
     follow_redirects_enabled         = true
     parse_dependent_requests_enabled = false
@@ -78,8 +85,11 @@ resource "azurerm_monitor_metric_alert" "telemetry_proxy_heartbeat" {
     azurerm_application_insights_standard_web_test.telemetry_proxy_heartbeat.id,
   ]
 
-  description              = "AVM Telemetry proxy heartbeat failed from one or more test locations."
-  severity                 = 2
+  description              = <<-EOT
+    The avm telemetry service heartbeat check failed from one or more test locations.
+    Telemetry endpoint: ${local.telemetry_proxy_endpoint}
+    Container App ARM ID: ${local.telemetry_proxy_arm_id}
+  EOT
   frequency                = "PT5M"
   window_size              = "PT5M"
   target_resource_type     = "Microsoft.Insights/webtests"
@@ -103,7 +113,7 @@ module "telemetry_proxy" {
   container_app_environment_infrastructure_subnet_id = var.subnet_id
   container_apps = {
     telemetry_proxy = {
-      name          = "telemetry-proxy"
+      name          = local.telemetry_proxy_app_name
       revision_mode = "Single"
       registry = [
         {
