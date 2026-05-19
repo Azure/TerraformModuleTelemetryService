@@ -4,3 +4,14 @@ updates:
     directory: "/docker_image"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/docker_image"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      go-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
