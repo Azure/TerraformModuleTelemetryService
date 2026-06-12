@@ -6,4 +6,8 @@ resource "azurerm_resource_group" "this" {
     do_not_delete = ""
     env           = "prod"
   }
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
