@@ -32,8 +32,6 @@ variables:
     value: 'azure-verified-tfmod-pull-request-plans'
   - name: planBlobName
     value: 'telemetry/tfplan_$(System.PullRequest.PullRequestNumber)'
-  - name: terraformVersion
-    value: 'latest'
 
 pool:
   vmImage: ubuntu-latest
@@ -43,6 +41,11 @@ steps:
 
   - bash: echo "##vso[build.updatebuildnumber]PR #$(System.PullRequest.PullRequestNumber) ($(Build.BuildId))"
     displayName: 'Set run title to PR number'
+
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: 'latest'
 
   - task: AzureCLI@2
     displayName: 'Terraform init, plan & state list'
@@ -60,17 +63,6 @@ steps:
         export ARM_TENANT_ID="$tenantId"
         export ARM_OIDC_TOKEN="$idToken"
         export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
-
-        # Install Terraform.
-        TF_VERSION="$(terraformVersion)"
-        if [ "$TF_VERSION" = "latest" ]; then
-          TF_VERSION="$(curl -fsSL https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r .version)"
-        fi
-        DEST="$(Agent.TempDirectory)/tfbin"
-        mkdir -p "$DEST"
-        curl -fsSLo "$DEST/terraform.zip" "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
-        unzip -o "$DEST/terraform.zip" -d "$DEST" >/dev/null
-        export PATH="$DEST:$PATH"
 
         terraform init || echo "Terraform init error but we tolerate it here."
         terraform init -reconfigure

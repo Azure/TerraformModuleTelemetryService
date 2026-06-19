@@ -38,7 +38,35 @@ steps:
     displayName: 'Resolve merged PR number'
 
   - task: AzureCLI@2
-    displayName: 'Download plan & apply'
+    displayName: 'Download plan & read version'
+    condition: ne(variables['PR_NUM'], '')
+    inputs:
+      azureSubscription: '$(azureServiceConnection)'
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        BLOB="telemetry/tfplan_$(PR_NUM)"
+
+        # Download the plan produced for this PR.
+        az storage blob download --account-name "$(storageAccountName)" \
+          --container-name "$(planContainerName)" --name "${BLOB}.txt" \
+          --no-progress --file tfplan.txt --auth-mode login
+        az storage blob download --account-name "$(storageAccountName)" \
+          --container-name "$(planContainerName)" --name "${BLOB}" \
+          --no-progress --file tfplan --auth-mode login
+
+        # Expose the exact Terraform version recorded by the plan pipeline.
+        echo "##vso[task.setvariable variable=TF_VERSION]$(head -n 1 tfplan.txt)"
+
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    condition: ne(variables['PR_NUM'], '')
+    inputs:
+      terraformVersion: '$(TF_VERSION)'
+
+  - task: AzureCLI@2
+    displayName: 'Terraform init & apply'
     condition: ne(variables['PR_NUM'], '')
     inputs:
       azureSubscription: '$(azureServiceConnection)'
@@ -54,24 +82,6 @@ steps:
         export ARM_TENANT_ID="$tenantId"
         export ARM_OIDC_TOKEN="$idToken"
         export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
-
-        BLOB="telemetry/tfplan_$(PR_NUM)"
-
-        # Download the plan produced for this PR.
-        az storage blob download --account-name "$(storageAccountName)" \
-          --container-name "$(planContainerName)" --name "${BLOB}.txt" \
-          --no-progress --file tfplan.txt --auth-mode login
-        az storage blob download --account-name "$(storageAccountName)" \
-          --container-name "$(planContainerName)" --name "${BLOB}" \
-          --no-progress --file tfplan --auth-mode login
-
-        # Install the exact Terraform version recorded by the plan pipeline.
-        TF_VERSION="$(head -n 1 tfplan.txt)"
-        DEST="$(Agent.TempDirectory)/tfbin"
-        mkdir -p "$DEST"
-        curl -fsSLo "$DEST/terraform.zip" "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
-        unzip -o "$DEST/terraform.zip" -d "$DEST" >/dev/null
-        export PATH="$DEST:$PATH"
 
         terraform init || echo "Terraform init error but we tolerate it here."
         terraform init -reconfigure
