@@ -1,0 +1,144 @@
+# Terraform Apply pipeline
+#
+# Trigger: every push to `main` (i.e. when a pull request is merged).
+#
+# Purpose: downloads the plan produced for the merged PR, runs `terraform apply`,
+#          deletes the plan blobs, and publishes the result to the run summary.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: azureServiceConnection
+    value: 'avm-telemetry-wif'
+  - name: storageAccountName
+    value: 'avmtelemetrystate'
+  - name: planContainerName
+    value: 'azure-verified-tfmod-pull-request-plans'
+
+jobs:
+  - deployment: apply
+    displayName: 'Terraform apply'
+    environment: 'avm-telemetry-apply'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+
+            - bash: |
+                set -euo pipefail
+                # Only inspect the commit *subject* (first line). The PR number lives there
+                # for merge commits and squash-merges; rebase-merges are not supported by
+                # this heuristic. The body may contain unrelated "#123" issue references
+                # that must not be matched.
+                SUBJECT="$(printf '%s\n' "$BUILD_SOURCEVERSIONMESSAGE" | head -n1)"
+
+                PR_NUM=""
+                if [[ "$SUBJECT" =~ Merge\ pull\ request\ #([0-9]+) ]]; then
+                  # Merge commit:  "Merge pull request #123 from owner/branch"
+                  PR_NUM="${BASH_REMATCH[1]}"
+                elif [[ "$SUBJECT" =~ \(#([0-9]+)\)[[:space:]]*$ ]]; then
+                  # Squash commit:  "Some title (#123)"
+                  PR_NUM="${BASH_REMATCH[1]}"
+                fi
+
+                if [ -z "$PR_NUM" ]; then
+                  echo "ERROR: could not determine a merged PR number from the commit subject:"
+                  echo "  ${SUBJECT}"
+                  echo "Expected a GitHub merge commit ('Merge pull request #N ...') or a"
+                  echo "squash subject ending in '(#N)'. Failing instead of silently"
+                  echo "skipping terraform apply."
+                  exit 1
+                fi
+
+                echo "Detected PR number: ${PR_NUM}"
+                echo "##vso[task.setvariable variable=PR_NUM]${PR_NUM}"
+                echo "##vso[build.updatebuildnumber]PR #${PR_NUM} ($(Build.BuildId))"
+              displayName: 'Resolve merged PR number'
+
+            - task: AzureCLI@2
+              displayName: 'Download plan & read version'
+              condition: ne(variables['PR_NUM'], '')
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  set -euo pipefail
+                  BLOB="telemetry/tfplan_$(PR_NUM)"
+
+                  # Download the plan produced for this PR.
+                  az storage blob download --account-name "$(storageAccountName)" \
+                    --container-name "$(planContainerName)" --name "${BLOB}.txt" \
+                    --no-progress --file tfplan.txt --auth-mode login
+                  az storage blob download --account-name "$(storageAccountName)" \
+                    --container-name "$(planContainerName)" --name "${BLOB}" \
+                    --no-progress --file tfplan --auth-mode login
+
+                  # Expose the exact Terraform version recorded by the plan pipeline.
+                  echo "##vso[task.setvariable variable=TF_VERSION]$(head -n 1 tfplan.txt)"
+
+            - task: TerraformInstaller@1
+              displayName: 'Install Terraform'
+              condition: ne(variables['PR_NUM'], '')
+              inputs:
+                terraformVersion: '$(TF_VERSION)'
+
+            - task: AzureCLI@2
+              displayName: 'Terraform init & apply'
+              condition: ne(variables['PR_NUM'], '')
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: bash
+                scriptLocation: inlineScript
+                addSpnToEnvironment: true
+                inlineScript: |
+                  set -euo pipefail
+
+                  export ARM_USE_OIDC=true
+                  export ARM_USE_AZUREAD=true
+                  export ARM_CLIENT_ID="$servicePrincipalId"
+                  export ARM_TENANT_ID="$tenantId"
+                  export ARM_OIDC_TOKEN="$idToken"
+                  export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+                  terraform init || echo "Terraform init error but we tolerate it here."
+                  terraform init -reconfigure
+                  terraform apply -auto-approve -input=false -compact-warnings tfplan
+                  terraform output
+
+            - task: AzureCLI@2
+              displayName: 'Delete plan blobs'
+              condition: and(succeeded(), ne(variables['PR_NUM'], ''))
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  set -euo pipefail
+                  BLOB="telemetry/tfplan_$(PR_NUM)"
+                  az storage blob delete --account-name "$(storageAccountName)" \
+                    --container-name "$(planContainerName)" --name "${BLOB}" --auth-mode login
+                  az storage blob delete --account-name "$(storageAccountName)" \
+                    --container-name "$(planContainerName)" --name "${BLOB}.txt" --auth-mode login
+
+            - bash: |
+                set -euo pipefail
+                # Publish the apply result to the Azure DevOps run summary. No GitHub access required.
+                SUMMARY="$(Build.ArtifactStagingDirectory)/apply-summary.md"
+                {
+                  echo '## Terraform Apply — PR #$(PR_NUM)'
+                  echo ''
+                  echo "tfplan file for PR #$(PR_NUM) applied and purged."
+                } > "$SUMMARY"
+                echo "##vso[task.uploadsummary]$SUMMARY"
+              displayName: 'Publish apply result to run summary'
+              condition: and(succeeded(), ne(variables['PR_NUM'], ''))

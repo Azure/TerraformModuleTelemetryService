@@ -1,0 +1,61 @@
+# Stale plan cleanup pipeline
+#
+# Trigger: daily schedule (Azure DevOps has no "PR closed" trigger for GitHub
+#          repos, so cleanup runs on a timer instead).
+#
+# Purpose: purges PR plan blobs untouched for `staleDays` days. Merged-PR plans
+#          are already removed by terraform-apply.yml, so this only sweeps up
+#          plans left behind by abandoned pull requests.
+
+trigger: none
+pr: none
+
+schedules:
+  - cron: '0 3 * * *'        # daily at 03:00 UTC
+    displayName: 'Daily stale plan cleanup'
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: azureServiceConnection
+    value: 'avm-telemetry-wif'
+  - name: storageAccountName
+    value: 'avmtelemetrystate'
+  - name: planContainerName
+    value: 'azure-verified-tfmod-pull-request-plans'
+  - name: staleDays
+    value: '7'
+
+steps:
+  - task: AzureCLI@2
+    displayName: 'Purge stale plan blobs'
+    inputs:
+      azureSubscription: '$(azureServiceConnection)'
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        CUTOFF_EPOCH="$(date -u -d '$(staleDays) days ago' +%s)"
+
+        az storage blob list \
+          --account-name "$(storageAccountName)" \
+          --container-name "$(planContainerName)" \
+          --prefix 'telemetry/' --auth-mode login \
+          --query "[].{name:name, modified:properties.lastModified}" -o tsv \
+        | while IFS=$'\t' read -r name modified; do
+            [ -z "$name" ] && continue
+            modified_epoch="$(date -u -d "$modified" +%s)"
+            if [ "$modified_epoch" -lt "$CUTOFF_EPOCH" ]; then
+              echo "Deleting stale plan blob: $name (last modified $modified)"
+              az storage blob delete \
+                --account-name "$(storageAccountName)" \
+                --container-name "$(planContainerName)" \
+                --name "$name" --auth-mode login \
+                || echo "Cleanup error for $name but we tolerate it."
+            fi
+          done
