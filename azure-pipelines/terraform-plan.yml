@@ -1,0 +1,117 @@
+# Terraform Plan pipeline
+#
+# Trigger: pull requests targeting `main` that touch Terraform, Go, or Docker
+#          sources (see the `pr:` paths below).
+#
+# Purpose: runs `terraform plan`, stores the plan in blob storage for the apply
+#          pipeline to consume, and publishes the plan to the run summary.
+
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - '**/*.tf'
+      - '**/*.tf.json'
+      - '**/*.hcl'
+      - '**/*.go'
+      - '**/go.mod'
+      - '**/go.sum'
+      - '**/Dockerfile'
+      - 'azure-pipelines/**'
+
+variables:
+  - name: azureServiceConnection
+    value: 'avm-telemetry-wif'
+  - name: storageAccountName
+    value: 'avmtelemetrystate'
+  - name: planContainerName
+    value: 'azure-verified-tfmod-pull-request-plans'
+  - name: planBlobName
+    value: 'telemetry/tfplan_$(System.PullRequest.PullRequestNumber)'
+  - name: terraformVersion
+    value: 'latest'
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+
+  - bash: echo "##vso[build.updatebuildnumber]PR #$(System.PullRequest.PullRequestNumber) ($(Build.BuildId))"
+    displayName: 'Set run title to PR number'
+
+  - task: AzureCLI@2
+    displayName: 'Terraform init, plan & state list'
+    inputs:
+      azureSubscription: '$(azureServiceConnection)'
+      scriptType: bash
+      scriptLocation: inlineScript
+      addSpnToEnvironment: true
+      inlineScript: |
+        set -euo pipefail
+
+        export ARM_USE_OIDC=true
+        export ARM_USE_AZUREAD=true
+        export ARM_CLIENT_ID="$servicePrincipalId"
+        export ARM_TENANT_ID="$tenantId"
+        export ARM_OIDC_TOKEN="$idToken"
+        export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+        # Install Terraform.
+        TF_VERSION="$(terraformVersion)"
+        if [ "$TF_VERSION" = "latest" ]; then
+          TF_VERSION="$(curl -fsSL https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r .version)"
+        fi
+        DEST="$(Agent.TempDirectory)/tfbin"
+        mkdir -p "$DEST"
+        curl -fsSLo "$DEST/terraform.zip" "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+        unzip -o "$DEST/terraform.zip" -d "$DEST" >/dev/null
+        export PATH="$DEST:$PATH"
+
+        terraform init || echo "Terraform init error but we tolerate it here."
+        terraform init -reconfigure
+        set -o pipefail
+
+        # First line of tfplan.txt is the Terraform version; the apply pipeline
+        # reads it to install the exact same version.
+        terraform version -json | jq -r .terraform_version > tfplan.txt
+        terraform plan -no-color -out tfplan | tee -a tfplan.txt
+
+        # Build the plan summary body: existing resources + plan.
+        echo '=========> Existing resources:' > output
+        terraform state list | tee -a output
+        cat tfplan.txt | tee -a output
+
+  - task: AzureCLI@2
+    displayName: 'Upload plan to blob storage'
+    inputs:
+      azureSubscription: '$(azureServiceConnection)'
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        az storage blob upload -f tfplan \
+          --account-name "$(storageAccountName)" --container-name "$(planContainerName)" \
+          --name "$(planBlobName)" --tier Cool --no-progress --overwrite --auth-mode login
+        az storage blob upload -f tfplan.txt \
+          --account-name "$(storageAccountName)" --container-name "$(planContainerName)" \
+          --name "$(planBlobName).txt" --tier Cool --no-progress --overwrite --auth-mode login
+
+  - bash: |
+      set -euo pipefail
+      # Publish the plan to the Azure DevOps run summary (shown on the
+      # pipeline run's "Summary" tab). No GitHub access required.
+      SUMMARY="$(Build.ArtifactStagingDirectory)/plan-summary.md"
+      {
+        echo '## Terraform Plan — PR #$(System.PullRequest.PullRequestNumber)'
+        echo ''
+        echo '```'
+        cat output
+        echo '```'
+      } > "$SUMMARY"
+      echo "##vso[task.uploadsummary]$SUMMARY"
+    displayName: 'Publish plan to run summary'
