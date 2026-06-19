@@ -71,7 +71,7 @@ steps:
         # First line of tfplan.txt is the Terraform version; the apply pipeline
         # reads it to install the exact same version.
         terraform version -json | jq -r .terraform_version > tfplan.txt
-        terraform plan -no-color -out tfplan | tee -a tfplan.txt
+        terraform plan -no-color -input=false -out tfplan | tee -a tfplan.txt
 
         # Build the plan summary body: existing resources + plan.
         echo '=========> Existing resources:' > output
