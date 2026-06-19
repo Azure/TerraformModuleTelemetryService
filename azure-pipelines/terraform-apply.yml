@@ -9,6 +9,16 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - '**/*.tf'
+      - '**/*.tf.json'
+      - '**/*.hcl'
+      - '**/*.go'
+      - '**/go.mod'
+      - '**/go.sum'
+      - '**/Dockerfile'
+      - 'azure-pipelines/**'
 
 pr: none
 
