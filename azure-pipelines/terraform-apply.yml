@@ -80,7 +80,7 @@ steps:
 
   - task: AzureCLI@2
     displayName: 'Delete plan blobs'
-    condition: ne(variables['PR_NUM'], '')
+    condition: and(succeeded(), ne(variables['PR_NUM'], ''))
     inputs:
       azureSubscription: '$(azureServiceConnection)'
       scriptType: bash
@@ -104,4 +104,4 @@ steps:
       } > "$SUMMARY"
       echo "##vso[task.uploadsummary]$SUMMARY"
     displayName: 'Publish apply result to run summary'
-    condition: ne(variables['PR_NUM'], '')
+    condition: and(succeeded(), ne(variables['PR_NUM'], ''))
