@@ -28,13 +28,32 @@ steps:
 
   - bash: |
       set -euo pipefail
-      # Derive the merged PR number from the merge/squash commit message (e.g. "(#123)").
-      PR_NUM="$(echo "$(Build.SourceVersionMessage)" | grep -oE '#[0-9]+' | head -n1 | tr -d '#' || true)"
-      echo "Detected PR number: '${PR_NUM:-<none>}'"
-      echo "##vso[task.setvariable variable=PR_NUM]${PR_NUM}"
-      if [ -n "$PR_NUM" ]; then
-        echo "##vso[build.updatebuildnumber]PR #${PR_NUM} ($(Build.BuildId))"
+      # Only inspect the commit *subject* (first line). The PR number lives there
+      # for both GitHub merge styles; the body may contain unrelated "#123"
+      # issue references that must not be matched.
+      SUBJECT="$(printf '%s\n' "$BUILD_SOURCEVERSIONMESSAGE" | head -n1)"
+
+      PR_NUM=""
+      if [[ "$SUBJECT" =~ Merge\ pull\ request\ #([0-9]+) ]]; then
+        # Merge commit:  "Merge pull request #123 from owner/branch"
+        PR_NUM="${BASH_REMATCH[1]}"
+      elif [[ "$SUBJECT" =~ \(#([0-9]+)\)[[:space:]]*$ ]]; then
+        # Squash/rebase commit:  "Some title (#123)"
+        PR_NUM="${BASH_REMATCH[1]}"
       fi
+
+      if [ -z "$PR_NUM" ]; then
+        echo "ERROR: could not determine a merged PR number from the commit subject:"
+        echo "  ${SUBJECT}"
+        echo "Expected a GitHub merge commit ('Merge pull request #N ...') or a"
+        echo "squash/rebase subject ending in '(#N)'. Failing instead of silently"
+        echo "skipping terraform apply."
+        exit 1
+      fi
+
+      echo "Detected PR number: ${PR_NUM}"
+      echo "##vso[task.setvariable variable=PR_NUM]${PR_NUM}"
+      echo "##vso[build.updatebuildnumber]PR #${PR_NUM} ($(Build.BuildId))"
     displayName: 'Resolve merged PR number'
 
   - task: AzureCLI@2
