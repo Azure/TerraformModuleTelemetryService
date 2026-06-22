@@ -1,6 +1,6 @@
 # Stale plan cleanup pipeline
 #
-# Trigger: daily schedule (Azure DevOps has no "PR closed" trigger for GitHub
+# Trigger: weekly schedule (Azure DevOps has no "PR closed" trigger for GitHub
 #          repos, so cleanup runs on a timer instead).
 #
 # Purpose: purges PR plan blobs untouched for `staleDays` days. Merged-PR plans
@@ -11,8 +11,8 @@ trigger: none
 pr: none
 
 schedules:
-  - cron: '0 3 * * *'        # daily at 03:00 UTC
-    displayName: 'Daily stale plan cleanup'
+  - cron: '0 3 * * 1'        # weekly on Monday at 03:00 UTC
+    displayName: 'Weekly stale plan cleanup'
     branches:
       include:
         - main
