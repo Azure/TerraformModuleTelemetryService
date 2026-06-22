@@ -1,8 +1,8 @@
-FROM golang:1.26.4 AS builder
+FROM mcr.microsoft.com/oss/go/microsoft/golang:1.26.4 AS builder
 WORKDIR /src
 COPY . /src
 
-RUN go mod tidy && CGO_ENABLED=0 go build -o /telemetry ./telemetry
+RUN go mod tidy && go build -o /telemetry ./telemetry
 
 FROM mcr.microsoft.com/azurelinux/base/core:3.0
 COPY --from=builder /telemetry /
