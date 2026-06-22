@@ -46,7 +46,9 @@ jobs:
           steps:
             - checkout: self
 
-            - bash: echo "##vso[build.updatebuildnumber]PR #$(System.PullRequest.PullRequestNumber) ($(Build.BuildId))"
+            - bash: |
+                set -euo pipefail
+                echo "##vso[build.updatebuildnumber]PR #${SYSTEM_PULLREQUEST_PULLREQUESTNUMBER} (${BUILD_BUILDID})"
               displayName: 'Set run title to PR number'
 
             - task: TerraformInstaller@1
