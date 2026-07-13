@@ -1,6 +1,6 @@
 module telemetry
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/iris-contrib/httpexpect/v2 v2.15.2
