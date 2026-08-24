@@ -2,11 +2,13 @@ version: 2
 updates:
   - package-ecosystem: "docker"
     directory: "/docker_image"
+    open-pull-requests-limit: 0
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "gomod"
     directory: "/docker_image"
+    open-pull-requests-limit: 0
     schedule:
       interval: "weekly"
     groups:
