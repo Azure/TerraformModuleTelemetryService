@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/oss/go/microsoft/golang:1.26.6 AS builder
+FROM mcr.microsoft.com/oss/go/microsoft/golang:1.26.9 AS builder
 WORKDIR /src
 COPY . /src
 
