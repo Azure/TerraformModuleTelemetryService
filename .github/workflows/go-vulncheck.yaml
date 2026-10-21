@@ -1,0 +1,67 @@
+name: Go vulnerability scan
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docker_image/**'
+      - '.github/workflows/go-vulncheck.yaml'
+  pull_request:
+    paths:
+      - 'docker_image/**'
+      - '.github/workflows/go-vulncheck.yaml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: go-vulncheck-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Read production Go version
+        id: go
+        run: |
+          version="$(sed -nE 's|^FROM mcr.microsoft.com/oss/go/microsoft/golang:([0-9]+\.[0-9]+\.[0-9]+) AS builder$|\1|p' docker_image/Dockerfile)"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected a Microsoft Go builder image with an exact stable Go version"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache-dependency-path: docker_image/go.sum
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+      - name: Scan Go modules and standard library
+        working-directory: docker_image/telemetry
+        env:
+          GOTOOLCHAIN: go${{ steps.go.outputs.version }}
+        run: |
+          govulncheck -scan module -format sarif > "$RUNNER_TEMP/govulncheck-raw.sarif"
+          jq '(.runs[].results[]?.locations[]?.physicalLocation.artifactLocation | select(.uri == "go.mod")).uri = "docker_image/go.mod"' \
+            "$RUNNER_TEMP/govulncheck-raw.sarif" > "$RUNNER_TEMP/govulncheck.sarif"
+      - name: Publish Code Scanning alerts
+        uses: github/codeql-action/upload-sarif@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3
+        with:
+          sarif_file: ${{ runner.temp }}/govulncheck.sarif
+          category: govulncheck

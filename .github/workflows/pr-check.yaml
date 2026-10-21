@@ -13,6 +13,8 @@ on:
       - '.github/workflows/**'
       - '**.hcl'
       - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
       - '**/Dockerfile'
 
 env:
